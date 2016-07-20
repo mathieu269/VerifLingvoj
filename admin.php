@@ -53,9 +53,97 @@ foreach (["extensions", "themes"] as $type) {
 }
 
 if (isset($_GET["type"])) {
-	require "resultats/resultats.php";
+	
+	
+	
+	$langues = plxUtils::getLangs();
+	
+	$infos = $choix[$_GET["type"]]["liste"][$_GET["element"]];
+	
+	
+	if (isset($_GET["langue"])) {
+		$languesFiltre = ["fr", $_GET["langue"]];
+	} else {
+		$languesFiltre = $langues;
+	}
+	
+	
+	// recherche des fichiers de langues existants
+	
+	$languesPresentes = [];
+	$listeFichiers = [];
+	
+	foreach ($langues as $codeLangue) {
+		
+		$fichier = sprintf($infos, $codeLangue);
+		
+		if (is_file($fichier)) {
+			$languesPresentes[] = $codeLangue;
+			
+			if (in_array($codeLangue, $languesFiltre)) {
+				$listeFichiers[$codeLangue] = $fichier;
+			}
+		}
+		
+	}
+	
+	$nombreFichiers = count($listeFichiers);
+	
+	ksort($listeFichiers);
+	
+	$languesPresentes = array_unique($languesPresentes);
+	
+	
+	// parcours des fichiers
+	
+	$resultats = [
+		"incomplets" => [],
+		"complets" => [],
+	];
+	
+	
+	foreach ($listeFichiers as $codeLangue => $f) {
+		
+		include $f;
+		
+		foreach($LANG as $code => $valeur) {
+			
+			
+			if (!isset($resultats["incomplets"][$code])) {
+				$resultats["incomplets"][$code] = [];
+			}
+			
+			$resultats["incomplets"][$code][$codeLangue] = $valeur;
+			
+			
+			if (count($resultats["incomplets"][$code]) === $nombreFichiers) {
+				$resultats["complets"][$code] = $resultats["incomplets"][$code];
+				unset($resultats["incomplets"][$code]);
+			}
+			
+		}
+		
+		
+	}
+	
+	$total = array_reduce($resultats, function ($total, $tab) {
+		$total += count($tab);
+		return $total;
+	}, 0);
+	
+	
+	$plxAdmin = plxAdmin::getInstance();
+	
+	
+	require "resultats/resultats.liste.php";
+	//require "resultats/resultats.tableau.php";
+	
+	
 	return; // sortie de admin.php
-}
+	
+} // FIN if (isset($_GET["type"])) {
+
+
 
 ?>
 
